@@ -1,8 +1,8 @@
 //! Virtual filesystem interfaces used by [ArceOS](https://github.com/arceos-org/arceos).
 //!
-//! A filesystem is a set of files and directories (symbol links are not
-//! supported currently), collectively referred to as **nodes**, which are
-//! conceptually similar to [inodes] in Linux. A file system needs to implement
+//! A filesystem is a set of files, directories, and symbolic links,
+//! collectively referred to as **nodes**, which are conceptually similar to
+//! [inodes] in Linux. A file system needs to implement
 //! the [`VfsOps`] trait, its files and directories need to implement the
 //! [`VfsNodeOps`] trait.
 //!
@@ -31,6 +31,9 @@
 //! | [`create()`](VfsNodeOps::create) | Create a new node with the given path | directory |
 //! | [`remove()`](VfsNodeOps::remove) | Remove the node with the given path | directory |
 //! | [`read_dir()`](VfsNodeOps::read_dir) | Read directory entries | directory |
+//! | [`symlink()`](VfsNodeOps::symlink) | Create a symbolic link | directory |
+//! | [`readlink()`](VfsNodeOps::readlink) | Read symbolic link target | symlink |
+//! | [`is_symlink()`](VfsNodeOps::is_symlink) | Check if node is a symbolic link | both |
 //!
 //! [inodes]: https://en.wikipedia.org/wiki/Inode
 
@@ -160,6 +163,11 @@ pub trait VfsNodeOps: Send + Sync {
         ax_err!(Unsupported)
     }
 
+    /// Create a symbolic link at the given `path` pointing to `target`.
+    fn symlink(&self, _target: &str, _path: &str) -> VfsResult {
+        ax_err!(Unsupported)
+    }
+
     /// Convert `&self` to [`&dyn Any`][1] that can use
     /// [`Any::downcast_ref`][2].
     ///
@@ -167,6 +175,16 @@ pub trait VfsNodeOps: Send + Sync {
     /// [2]: core::any::Any#method.downcast_ref
     fn as_any(&self) -> &dyn core::any::Any {
         unimplemented!()
+    }
+
+    /// read the symbolic link and return the target path.
+    fn readlink(&self, _path: &str, _buf: &mut [u8]) -> VfsResult<usize> {
+        ax_err!(Unsupported)
+    }
+
+    /// Check if the node is a symbolic link.
+    fn is_symlink(&self) -> bool {
+        false
     }
 }
 
