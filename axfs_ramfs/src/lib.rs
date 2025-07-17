@@ -41,6 +41,13 @@ impl RamFileSystem {
         self.root.clone()
     }
 
+    /// Add a node to the root directory.
+    ///
+    /// The node must implement [`axfs_vfs::VfsNodeOps`], and be wrapped in [`Arc`].
+    pub fn add(&self, name: &'static str, node: VfsNodeRef) {
+        let _ = self.root.add_node(name, node);
+    }
+
     /// Add a dynamic symlink to the filesystem.
     /// This is a convenience method for creating symlinks with runtime-generated targets.
     pub fn add_dynamic_symlink<F>(&self, path: &str, generator: F) -> VfsResult
