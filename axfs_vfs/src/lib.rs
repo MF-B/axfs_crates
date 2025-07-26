@@ -48,6 +48,7 @@ pub mod path;
 
 use alloc::sync::Arc;
 use axerrno::{ax_err, AxError, AxResult};
+use axio::PollState;
 
 pub use self::structs::{FileSystemInfo, VfsDirEntry, VfsNodeAttr, VfsNodePerm, VfsNodeType};
 
@@ -188,6 +189,14 @@ pub trait VfsNodeOps: Send + Sync {
     }
 
     fn add_node(&self, _name: &'static str, _ty: VfsNodeRef) -> VfsResult {
+        ax_err!(Unsupported)
+    }
+
+    fn ioctl(&self, _cmd: u32, _arg: *mut u8) -> VfsResult<usize> {
+        ax_err!(Unsupported)
+    }
+
+    fn poll(&self) -> VfsResult<PollState> {
         ax_err!(Unsupported)
     }
 }
