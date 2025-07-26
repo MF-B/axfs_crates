@@ -1,3 +1,4 @@
+use crate::alloc::string::ToString;
 use alloc::collections::BTreeMap;
 use alloc::sync::{Arc, Weak};
 use alloc::{string::String, vec::Vec};
@@ -67,6 +68,20 @@ impl DirNode {
         children.remove(name);
         Ok(())
     }
+
+    /// Helper method to traverse path components (., .., or child names)
+    fn traverse_path(&self, name: &str) -> VfsResult<VfsNodeRef> {
+        match name {
+            "" | "." => Ok(self.this.upgrade().ok_or(VfsError::NotFound)? as VfsNodeRef),
+            ".." => self.parent().ok_or(VfsError::NotFound),
+            _ => self
+                .children
+                .read()
+                .get(name)
+                .ok_or(VfsError::NotFound)
+                .cloned(),
+        }
+    }
 }
 
 impl VfsNodeOps for DirNode {
@@ -80,16 +95,7 @@ impl VfsNodeOps for DirNode {
 
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
         let (name, rest) = split_path(path);
-        let node = match name {
-            "" | "." => Ok(self.clone() as VfsNodeRef),
-            ".." => self.parent().ok_or(VfsError::NotFound),
-            _ => self
-                .children
-                .read()
-                .get(name)
-                .cloned()
-                .ok_or(VfsError::NotFound),
-        }?;
+        let node = self.traverse_path(name)?;
 
         if let Some(rest) = rest {
             node.lookup(rest)
@@ -118,22 +124,9 @@ impl VfsNodeOps for DirNode {
     }
 
     fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
-        log::debug!("create {ty:?} at ramfs: {path}");
         let (name, rest) = split_path(path);
         if let Some(rest) = rest {
-            match name {
-                "" | "." => self.create(rest, ty),
-                ".." => self.parent().ok_or(VfsError::NotFound)?.create(rest, ty),
-                _ => {
-                    let subdir = self
-                        .children
-                        .read()
-                        .get(name)
-                        .ok_or(VfsError::NotFound)?
-                        .clone();
-                    subdir.create(rest, ty)
-                }
-            }
+            self.traverse_path(name)?.create(rest, ty)
         } else if name.is_empty() || name == "." || name == ".." {
             Ok(()) // already exists
         } else {
@@ -142,27 +135,19 @@ impl VfsNodeOps for DirNode {
     }
 
     fn remove(&self, path: &str) -> VfsResult {
-        log::debug!("remove at ramfs: {path}");
         let (name, rest) = split_path(path);
         if let Some(rest) = rest {
-            match name {
-                "" | "." => self.remove(rest),
-                ".." => self.parent().ok_or(VfsError::NotFound)?.remove(rest),
-                _ => {
-                    let subdir = self
-                        .children
-                        .read()
-                        .get(name)
-                        .ok_or(VfsError::NotFound)?
-                        .clone();
-                    subdir.remove(rest)
-                }
-            }
+            self.traverse_path(name)?.remove(rest)
         } else if name.is_empty() || name == "." || name == ".." {
-            Err(VfsError::InvalidInput) // remove '.' or '..
+            Err(VfsError::InvalidInput) // cannot remove '.' or '..'
         } else {
             self.remove_node(name)
         }
+    }
+
+    fn add_node(&self, name: &'static str, node: VfsNodeRef) -> VfsResult {
+        self.children.write().insert(name.to_string(), node);
+        Ok(())
     }
 
     axfs_vfs::impl_vfs_dir_default! {}

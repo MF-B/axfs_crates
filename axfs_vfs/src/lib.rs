@@ -186,6 +186,10 @@ pub trait VfsNodeOps: Send + Sync {
     fn is_symlink(&self) -> bool {
         false
     }
+
+    fn add_node(&self, _name: &'static str, _ty: VfsNodeRef) -> VfsResult {
+        ax_err!(Unsupported)
+    }
 }
 
 #[doc(hidden)]

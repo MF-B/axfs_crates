@@ -16,7 +16,7 @@ pub use self::dir::DirNode;
 pub use self::file::FileNode;
 
 use alloc::sync::Arc;
-use axfs_vfs::{VfsNodeRef, VfsOps, VfsResult};
+use axfs_vfs::{VfsNodeOps, VfsNodeRef, VfsOps, VfsResult};
 use spin::once::Once;
 
 /// A RAM filesystem that implements [`axfs_vfs::VfsOps`].
@@ -37,6 +37,13 @@ impl RamFileSystem {
     /// Returns the root directory node in [`Arc<DirNode>`](DirNode).
     pub fn root_dir_node(&self) -> Arc<DirNode> {
         self.root.clone()
+    }
+
+    /// Add a node to the root directory.
+    ///
+    /// The node must implement [`axfs_vfs::VfsNodeOps`], and be wrapped in [`Arc`].
+    pub fn add(&self, name: &'static str, node: VfsNodeRef) {
+        let _ = self.root.add_node(name, node);
     }
 }
 
