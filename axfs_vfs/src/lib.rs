@@ -192,7 +192,7 @@ pub trait VfsNodeOps: Send + Sync {
         ax_err!(Unsupported)
     }
 
-    fn ioctl(&self, _cmd: u32, _arg: *mut u8) -> VfsResult<usize> {
+    fn ioctl(&self, _op: usize, _arg: *mut u8) -> VfsResult<isize> {
         ax_err!(Unsupported)
     }
 
