@@ -127,6 +127,11 @@ impl VfsNodeOps for DirNode {
         }
     }
 
+    fn add_node(&self, name: &'static str, node: VfsNodeRef) -> VfsResult {
+        self.children.write().insert(name, node);
+        Ok(())
+    }
+
     axfs_vfs::impl_vfs_dir_default! {}
 }
 
